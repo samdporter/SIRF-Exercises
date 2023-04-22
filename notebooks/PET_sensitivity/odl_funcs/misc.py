@@ -199,3 +199,126 @@ def shepp_logan(space):
     x = ellipse_phantom(space[1:], ellipsoids)
     x = [x]
     return np.array(x)
+
+def random_camouflage_array(shape, num_patches, min_size=2, max_size=10, colors=[0, 128, 255]):
+    # Initialize an empty array
+    canvas = np.zeros(shape)
+    
+    for i in range(num_patches):
+        # Generate random parameters for the patch
+        center_x = np.random.randint(low=0, high=shape[1])
+        center_y = np.random.randint(low=0, high=shape[0])
+        size = np.random.randint(low=min_size, high=max_size)
+        color = random.choice(colors)
+        
+        # Compute the patch boundaries
+        x1 = center_x - size // 2
+        y1 = center_y - size // 2
+        x2 = center_x + size // 2
+        y2 = center_y + size // 2
+        
+        # Clip the patch boundaries to the canvas boundaries
+        x1 = np.clip(x1, 0, shape[1]-1)
+        y1 = np.clip(y1, 0, shape[0]-1)
+        x2 = np.clip(x2, 0, shape[1]-1)
+        y2 = np.clip(y2, 0, shape[0]-1)
+        
+        # Fill the patch with the color
+        canvas[y1:y2, x1:x2] = color
+    
+    return canvas
+
+def random_polygons_array(shape, num_polygons, min_n=3, max_n=8, min_size=5, max_size=50):
+    
+    canvas = np.zeros(shape)
+
+    for i in range(num_polygons):
+        # Generate random parameters for the polygon
+        center_x = np.random.randint(low=0, high=shape[1])
+        center_y = np.random.randint(low=0, high=shape[0])
+        size = np.random.randint(low=min_size, high=max_size)
+        n = np.random.randint(low=min_n, high=max_n)
+        color = np.random.randint(low=1, high=255)
+        
+        # Generate the vertices of the polygon
+        theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+        x = center_x + size*np.cos(theta)
+        y = center_y + size*np.sin(theta)
+        
+        # Convert the vertices to integer coordinates
+        x = np.round(x).astype(int)
+        y = np.round(y).astype(int)
+        
+        # Clip the vertices to the canvas boundaries
+        x = np.clip(x, 0, shape[1]-1)
+        y = np.clip(y, 0, shape[0]-1)
+        
+        # Fill the polygon with the color
+        for j in range(n):
+            x1, y1 = x[j], y[j]
+            x2, y2 = x[(j+1) % n], y[(j+1) % n]
+            canvas = fill_line(canvas, x1, y1, x2, y2, color)
+    
+    return canvas
+
+def fill_line(canvas, x1, y1, x2, y2, color):
+    # Compute the line segment parameters
+    dx = x2 - x1
+    dy = y2 - y1
+    d = max(abs(dx), abs(dy))
+    sx = dx / d
+    sy = dy / d
+    
+    # Iterate over the line segment pixels
+    x = x1
+    y = y1
+    for i in range(d+1):
+        canvas[int(y), int(x)] = color
+        x += sx
+        y += sy
+    
+    return canvas
+
+def random_shapes_array(shape, num_shapes, min_size=2, max_size=20):
+
+    canvas = np.zeros(shape)
+    
+    for i in range(num_shapes):
+        # Generate random parameters for the shape
+        center_x = np.random.randint(low=0, high=shape[1])
+        center_y = np.random.randint(low=0, high=shape[0])
+        size = np.random.randint(low=min_size, high=max_size)
+        color = np.random.randint(low=1, high=255)
+        
+        # Choose a random shape
+        choose_shape = np.random.choice(['rectangle', 'circle'])
+        
+        if choose_shape == 'rectangle':
+            x_min = center_x - size//2
+            x_max = center_x + size//2
+            y_min = center_y - size//2
+            y_max = center_y + size//2
+            
+            # Clip the rectangle to the canvas boundaries
+            x_min = max(0, x_min)
+            x_max = min(shape[1], x_max)
+            y_min = max(0, y_min)
+            y_max = min(shape[0], y_max)
+            
+            # Fill the rectangle with the color
+            canvas[y_min:y_max, x_min:x_max] = color
+        
+        elif choose_shape == 'circle':
+
+            x, y = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
+
+            # Compute the distances from the center of the circle
+            distances = np.sqrt((x - center_x)**2 + (y - center_y)**2)
+            
+            # Select the points within the circle
+            mask = distances <= size//2
+            
+            # Fill the circle with the color
+            canvas[mask] = color
+    
+    return canvas
